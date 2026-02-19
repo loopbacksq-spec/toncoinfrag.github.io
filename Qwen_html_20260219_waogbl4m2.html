@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Ton Wallet</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    @font-face {
+      font-family: 'Fragment';
+      src: local('Arial'), local('Helvetica'), sans-serif;
+    }
+
+    :root {
+      --bg-primary: #000000;
+      --bg-secondary: #0a0a0a;
+      --bg-tertiary: #111111;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b0;
+      --accent-white: #ffffff;
+      --accent-glow: rgba(255, 255, 255, 0.15);
+      --red-glow: rgba(255, 50, 50, 0.7);
+      --transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+      --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.6);
+      --shadow-glow: 0 0 25px rgba(255, 255, 255, 0.1);
+    }
+
+    body {
+      font-family: 'Fragment', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Animated background particles */
+    .bg-particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: var(--accent-glow);
+      border-radius: 50%;
+      animation: float 15s infinite linear;
+      opacity: 0.3;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+      10% { opacity: 0.6; }
+      90% { opacity: 0.6; }
+      100% { transform: translateY(-20px) translateX(50px); opacity: 0; }
+    }
+
+    /* Screens */
+    .screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      z-index: 10;
+      transition: var(--transition);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.98);
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: scale(1);
+    }
+
+    /* Welcome Screen */
+    #welcome-screen {
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      background: radial-gradient(ellipse at center, #0a0a0a 0%, #000000 70%);
+    }
+
+    .welcome-logo {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, #333, #111);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow-glow), 0 0 60px rgba(255, 255, 255, 0.08);
+      position: relative;
+      animation: pulse 3s infinite;
+    }
+
+    .welcome-logo::before {
+      content: "T";
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(45deg, #fff, #aaa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: var(--shadow-glow), 0 0 60px rgba(255, 255, 255, 0.08); }
+      50% { box-shadow: var(--shadow-glow), 0 0 80px rgba(255, 255, 255, 0.2); }
+    }
+
+    .welcome-title {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      background: linear-gradient(45deg, #fff, #ccc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    .welcome-subtitle {
+      color: var(--text-secondary);
+      font-size: 16px;
+      margin-bottom: 48px;
+      animation: fadeInUp 0.6s ease-out 0.1s both;
+    }
+
+    .btn-start {
+      background: var(--accent-white);
+      color: #000;
+      border: none;
+      padding: 18px 50px;
+      font-size: 18px;
+      font-weight: 600;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 8px 30px rgba(255, 255, 255, 0.25);
+      animation: fadeInUp 0.6s ease-out 0.2s both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-start::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transition: 0.6s;
+    }
+
+    .btn-start:hover::after {
+      left: 100%;
+    }
+
+    .btn-start:active {
+      transform: scale(0.97);
+      box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Main Menu */
+    #main-screen {
+      background: var(--bg-primary);
+      justify-content: space-between;
+      padding-top: 40px;
+      padding-bottom: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #4ade80;
+      animation: pulse-green 2s infinite;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; box-shadow: 0 0 12px #4ade80; }
+      50% { opacity: 0.7; box-shadow: 0 0 6px #4ade80; }
+    }
+
+    .balance-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 0;
+      position: relative;
+    }
+
+    .balance-3d {
+      font-size: 56px;
+      font-weight: 700;
+      text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+      animation: float-balance 4s ease-in-out infinite;
+      position: relative;
+      z-index: 2;
+    }
+
+    .balance-3d::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 8px;
+      background: radial-gradient(ellipse, rgba(255,255,255,0.2), transparent 70%);
+      border-radius: 50%;
+      filter: blur(4px);
+      animation: shadow-pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes float-balance {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes shadow-pulse {
+      0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(1); }
+      50% { opacity: 0.7; transform: translateX(-50%) scale(1.1); }
+    }
+
+    .balance-label {
+      color: var(--text-secondary);
+      font-size: 15px;
+      margin-top: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Bottom Navigation */
+    .nav-bar {
+      background: var(--bg-secondary);
+      border-radius: 24px 24px 0 0;
+      padding: 16px 20px 24px;
+      display: flex;
+      justify-content: space-around;
+      box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.4);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      z-index: 20;
+    }
+
+    .nav-bar::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 4px;
+      background: var(--bg-tertiary);
+      border-radius: 2px;
+    }
+
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 10px 8px;
+      border-radius: 16px;
+      transition: var(--transition);
+      position: relative;
+      width: 70px;
+    }
+
+    .nav-btn.active,
+    .nav-btn:hover {
+      color: var(--accent-white);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .nav-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      width: 24px;
+      height: 4px;
+      background: var(--accent-white);
+      border-radius: 2px;
+      animation: slide-dot 0.3s ease-out;
+    }
+
+    @keyframes slide-dot {
+      from { width: 0; opacity: 0; }
+      to { width: 24px; opacity: 1; }
+    }
+
+    .nav-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .nav-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      transition: var(--transition);
+    }
+
+    .nav-btn.active .nav-icon {
+      transform: scale(1.1);
+    }
+
+    .nav-btn.active .nav-icon svg {
+      stroke: var(--accent-white);
+      stroke-width: 2.2;
+    }
+
+    /* Content Areas */
+    .content-area {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      padding: 20px 16px 0;
+      overflow-y: auto;
+      animation: slideUp 0.4s ease-out;
+    }
+
+    .content-area.active {
+      display: flex;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 20px;
+      background: linear-gradient(to bottom, var(--accent-white), transparent);
+      border-radius: 2px;
+    }
+
+    /* Promo Codes Section */
+    .promo-description {
+      background: var(--bg-secondary);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      font-size: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    .promo-input-group {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .promo-input {
+      flex: 1;
+      background: var(--bg-tertiary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 16px 20px;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 500;
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .promo-input:focus {
+      border-color: var(--accent-white);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+    }
+
+    .promo-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
+    }
+
+    .btn-apply {
+      background: var(--accent-white);
+      color: #000;
+      border: none;
+      padding: 16px 24px;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: var(--transition);
+      min-width: 100px;
+    }
+
+    .btn-apply:active {
+      transform: scale(0.97);
+    }
+
+    .promo-message {
+      padding: 16px;
+      border-radius: 16px;
+      margin-top: 10px;
+      font-weight: 500;
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .promo-message.success {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      display: block;
+    }
+
+    .promo-message.error {
+      background: rgba(248, 113, 113, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Withdrawal Section */
+    .card-input-group {
+      margin-bottom: 24px;
+    }
+
+    .card-label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-label svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-secondary);
+    }
+
+    .card-input {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 18px 20px;
+      color: var(--text-primary);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      outline: none;
+      transition: var(--transition);
+      font-family: monospace;
+    }
+
+    .card-input:focus {
+      border-color: var(--accent-white);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
+    }
+
+    .security-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin: 16px 0 24px;
+      color: #60a5fa;
+      font-size: 14px;
+    }
+
+    .security-badge svg {
+      width: 18px;
+      height: 18px;
+      stroke: #60a5fa;
+    }
+
+    .btn-execute {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent-white), #e0e0e0);
+      color: #000;
+      border: none;
+      padding: 18px;
+      border-radius: 18px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-execute:active {
+      transform: scale(0.98);
+    }
+
+    .loading-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .loading-container.active {
+      display: flex;
+    }
+
+    .loader {
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: var(--accent-white);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .loader::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border: 3px solid transparent;
+      border-top-color: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      animation: spin 2s linear infinite reverse;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 280px;
+    }
+
+    .loading-text strong {
+      color: var(--accent-white);
+      display: block;
+      margin-bottom: 6px;
+      font-size: 17px;
+    }
+
+    /* Profile Section */
+    .profile-card {
+      background: var(--bg-secondary);
+      border-radius: 24px;
+      padding: 28px 24px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      animation: card-pop 0.5s ease-out;
+    }
+
+    @keyframes card-pop {
+      0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .avatar-placeholder {
+      width: 90px;
+      height: 90px;
+      background: linear-gradient(135deg, #222, #111);
+      border-radius: 24px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .avatar-placeholder::before {
+      content: '?';
+      font-size: 40px;
+      font-weight: 300;
+      color: var(--text-secondary);
+    }
+
+    .avatar-placeholder::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate-shine 4s linear infinite;
+    }
+
+    @keyframes rotate-shine {
+      to { transform: rotate(360deg); }
+    }
+
+    .profile-name {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .profile-id {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+      font-family: monospace;
+    }
+
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--red-glow);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 10px rgba(255, 50, 50, 0.8);
+      box-shadow: 0 0 20px rgba(255, 50, 50, 0.4);
+      animation: glow-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 50, 50, 0.4); }
+      50% { box-shadow: 0 0 35px rgba(255, 50, 50, 0.7); }
+    }
+
+    .role-badge svg {
+      width: 18px;
+      height: 18px;
+      stroke: #fff;
+      animation: float-icon 3s ease-in-out infinite;
+    }
+
+    @keyframes float-icon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+
+    /* Support Section */
+    .support-section {
+      margin-top: auto;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .support-title {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .support-title svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--text-secondary);
+    }
+
+    .support-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 15px;
+    }
+
+    .support-item:last-child {
+      border-bottom: none;
+    }
+
+    .support-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .support-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-secondary);
+    }
+
+    .support-value {
+      color: var(--text-primary);
+      font-weight: 500;
+      font-family: monospace;
+      letter-spacing: 0.3px;
+    }
+
+    /* Animations for 3D effect on buttons */
+    .nav-btn:active .nav-icon {
+      transform: scale(0.95) rotateX(10deg);
+    }
+
+    /* Responsive adjustments */
+    @media (max-height: 700px) {
+      .balance-3d { font-size: 48px; }
+      .welcome-logo { width: 100px; height: 100px; }
+      .welcome-title { font-size: 24px; }
+    }
+
+    /* Hide scrollbar but allow scrolling */
+    .content-area::-webkit-scrollbar {
+      width: 4px;
+    }
+    .content-area::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .content-area::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Background particles -->
+  <div class="bg-particles" id="particles"></div>
+
+  <!-- Welcome Screen -->
+  <div class="screen active" id="welcome-screen">
+    <div class="welcome-logo"></div>
+    <h1 class="welcome-title">Добро пожаловать в Ton</h1>
+    <p class="welcome-subtitle">Безопасный кошелёк нового поколения</p>
+    <button class="btn-start" id="start-btn">Начать</button>
+  </div>
+
+  <!-- Main Screen -->
+  <div class="screen" id="main-screen">
+    <div class="header">
+      <div class="header-title">Ton Wallet</div>
+    </div>
+    
+    <div class="balance-container">
+      <div class="balance-3d">0₽</div>
+      <div class="balance-label">Доступный баланс</div>
+    </div>
+    
+    <!-- Content Areas -->
+    <div class="content-area active" id="promo-content">
+      <h2 class="section-title">Промокоды</h2>
+      <div class="promo-description">
+        Промокоды позволяют получать вознаграждения от пользователей платформы. 
+        Каждый код активирует уникальное предложение и начисляет средства на ваш баланс. 
+        Коды генерируются криптографически и имеют ограниченное время действия.
+      </div>
+      
+      <div class="promo-input-group">
+        <input type="text" class="promo-input" id="promo-code" placeholder="Введите промокод" maxlength="10" autocomplete="off">
+        <button class="btn-apply" id="apply-promo">Применить</button>
+      </div>
+      
+      <div class="promo-message" id="promo-message"></div>
+    </div>
+    
+    <div class="content-area" id="withdraw-content">
+      <h2 class="section-title">Вывод средств</h2>
+      
+      <div class="card-input-group">
+        <label class="card-label">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+            <line x1="2" y1="10" x2="22" y2="10"></line>
+          </svg>
+          Номер карты
+        </label>
+        <input type="text" class="card-input" id="card-number" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="off">
+      </div>
+      
+      <div class="security-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>
+        Данные карты обрабатываются локально и не передаются в сеть
+      </div>
+      
+      <button class="btn-execute" id="execute-withdraw">ВЫПОЛНИТЬ</button>
+      
+      <div class="loading-container" id="loading-container">
+        <div class="loader"></div>
+        <div class="loading-text">
+          <strong>Обработка транзакции...</strong>
+          Средства поступят на вашу карту в течение 5-10 минут.<br>
+          При высокой нагрузке время обработки может быть увеличено.
+        </div>
+      </div>
+    </div>
+    
+    <div class="content-area" id="profile-content">
+      <h2 class="section-title">Профиль</h2>
+      
+      <div class="profile-card">
+        <div class="avatar-placeholder"></div>
+        <div class="profile-name">АНОНИМНЫЙ ПОЛЬЗОВАТЕЛЬ</div>
+        <div class="profile-id">ID: •••• •••• •••• 7X9A</div>
+        <div class="role-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+          </svg>
+          GHOST
+        </div>
+      </div>
+      
+      <div class="support-section">
+        <div class="support-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="8"></line>
+          </svg>
+          Поддержка
+        </div>
+        <div class="support-item">
+          <div class="support-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <span class="support-value">F.TONCOIN@GMAIL.COM</span>
+        </div>
+        <div class="support-item">
+          <div class="support-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+          </div>
+          <span class="support-value">+7 (953) ••• ••••</span>
+        </div>
+        <div class="support-item">
+          <div class="support-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <span class="support-value">Пн-Пт: 10:00 - 19:00 MSK</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bottom Navigation -->
+    <div class="nav-bar">
+      <button class="nav-btn active" data-target="promo-content">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="8.5" cy="7" r="4"></circle>
+            <line x1="20" y1="8" x2="20" y2="14"></line>
+            <line x1="23" y1="11" x2="17" y2="11"></line>
+          </svg>
+        </div>
+        <span>Промокоды</span>
+      </button>
+      
+      <button class="nav-btn" data-target="withdraw-content">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"></line>
+            <polyline points="19 12 12 5 5 12"></polyline>
+          </svg>
+        </div>
+        <span>Вывод</span>
+      </button>
+      
+      <button class="nav-btn" data-target="profile-content">
+        <div class="nav-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <span>Профиль</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize particles background
+    function initParticles() {
+      const container = document.getElementById('particles');
+      const particleCount = Math.floor(window.innerWidth / 20);
+      
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.animationDelay = `${Math.random() * 15}s`;
+        particle.style.animationDuration = `${15 + Math.random() * 20}s`;
+        particle.style.width = `${Math.random() * 3 + 1}px`;
+        particle.style.height = particle.style.width;
+        container.appendChild(particle);
+      }
+    }
+    
+    // Format card number with spaces
+    function formatCardNumber(value) {
+      return value
+        .replace(/\D/g, '')
+        .replace(/(.{4})/g, '$1 ')
+        .trim()
+        .slice(0, 19);
+    }
+    
+    // Promo codes storage (client-side only)
+    const usedPromos = new Set(JSON.parse(localStorage.getItem('usedPromos') || '[]'));
+    const promoRewards = {
+      'FTT31': 500,
+      'A2S1': 100
+    };
+    
+    // DOM Elements
+    const startBtn = document.getElementById('start-btn');
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const mainScreen = document.getElementById('main-screen');
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const contentAreas = document.querySelectorAll('.content-area');
+    const promoInput = document.getElementById('promo-code');
+    const applyPromoBtn = document.getElementById('apply-promo');
+    const promoMessage = document.getElementById('promo-message');
+    const cardInput = document.getElementById('card-number');
+    const executeWithdrawBtn = document.getElementById('execute-withdraw');
+    const loadingContainer = document.getElementById('loading-container');
+    
+    // Event Listeners
+    startBtn.addEventListener('click', () => {
+      welcomeScreen.classList.remove('active');
+      mainScreen.classList.add('active');
+      // Create subtle entrance animation for main screen
+      setTimeout(() => {
+        document.querySelector('.balance-3d').style.animation = 'float-balance 4s ease-in-out infinite';
+      }, 300);
+    });
+    
+    // Navigation
+    navBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Update active nav button
+        navBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // Show corresponding content
+        const targetId = btn.dataset.target;
+        contentAreas.forEach(area => {
+          area.classList.remove('active');
+          if (area.id === targetId) {
+            area.classList.add('active');
+          }
+        });
+      });
+    });
+    
+    // Promo code functionality
+    applyPromoBtn.addEventListener('click', () => {
+      const code = promoInput.value.trim().toUpperCase();
+      promoMessage.className = 'promo-message';
+      promoMessage.style.display = 'none';
+      
+      if (!code) {
+        promoMessage.textContent = 'Введите промокод';
+        promoMessage.classList.add('error');
+        return;
+      }
+      
+      if (usedPromos.has(code)) {
+        promoMessage.textContent = 'Этот промокод уже был использован';
+        promoMessage.classList.add('error');
+        promoMessage.style.display = 'block';
+        return;
+      }
+      
+      if (promoRewards[code]) {
+        // Mark as used and save to localStorage
+        usedPromos.add(code);
+        localStorage.setItem('usedPromos', JSON.stringify(Array.from(usedPromos)));
+        
+        // Update balance display (visual only)
+        const balanceEl = document.querySelector('.balance-3d');
+        const currentBalance = parseInt(balanceEl.textContent) || 0;
+        balanceEl.textContent = `${currentBalance + promoRewards[code]}₽`;
+        
+        promoMessage.textContent = `✅ Промокод активирован! Начислено ${promoRewards[code]}₽`;
+        promoMessage.classList.add('success');
+        promoMessage.style.display = 'block';
+        promoInput.value = '';
+      } else {
+        promoMessage.textContent = '❌ Неверный промокод';
+        promoMessage.classList.add('error');
+        promoMessage.style.display = 'block';
+      }
+    });
+    
+    // Card input formatting
+    cardInput.addEventListener('input', (e) => {
+      e.target.value = formatCardNumber(e.target.value);
+    });
+    
+    // Withdrawal functionality
+    executeWithdrawBtn.addEventListener('click', () => {
+      const cardValue = cardInput.value.replace(/\s/g, '');
+      
+      if (cardValue.length < 16) {
+        alert('Пожалуйста, введите корректный номер карты');
+        return;
+      }
+      
+      // Hide form, show loading
+      document.querySelector('.card-input-group').style.display = 'none';
+      document.querySelector('.security-badge').style.display = 'none';
+      executeWithdrawBtn.style.display = 'none';
+      loadingContainer.classList.add('active');
+      
+      // IMPORTANT: Card data is NOT sent anywhere - client-side only
+      // In a real app, this would be encrypted and sent securely
+      // Here we simulate processing without any network requests
+      console.log('Card data processed locally - no network transmission');
+      
+      // Simulate infinite loading (as requested)
+      // In production, this would connect to a real payment processor
+    });
+    
+    // Prevent form submission on Enter
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (input === promoInput) applyPromoBtn.click();
+          if (input === cardInput && loadingContainer.classList.contains('active') === false) {
+            executeWithdrawBtn.click();
+          }
+        }
+      });
+    });
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      initParticles();
+      
+      // Add subtle hover effects to interactive elements
+      document.querySelectorAll('.btn-start, .btn-apply, .btn-execute, .nav-btn').forEach(el => {
+        el.addEventListener('touchstart', () => {}, { passive: true });
+      });
+      
+      // Security notice in console
+      console.log('%c🔒 TON WALLET SECURITY NOTICE', 'color: #4ade80; font-weight: bold; font-size: 14px;');
+      console.log('%c• All sensitive data is processed client-side only', 'color: #94a3b8;');
+      console.log('%c• No card information is transmitted over the network', 'color: #94a3b8;');
+      console.log('%c• Promo code usage is stored locally in your browser', 'color: #94a3b8;');
+    });
+    
+    // Handle window resize for particles
+    window.addEventListener('resize', () => {
+      const container = document.getElementById('particles');
+      container.innerHTML = '';
+      initParticles();
+    });
+  </script>
+</body>
+</html>
